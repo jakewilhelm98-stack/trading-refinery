@@ -41,24 +41,26 @@ class QuantConnectClient:
     
     def _get_auth_headers(self) -> dict:
         """Generate authentication headers"""
-        timestamp = str(int(time.time()))
-        
-        # QC uses hash-based auth
-        hash_string = f"{self.api_token}:{timestamp}"
-        hash_bytes = hashlib.sha256(hash_string.encode()).hexdigest()
-        
+        import base64
+
+        # QC uses Basic auth with userId:token
+        credentials = f"{self.user_id}:{self.api_token}"
+        encoded = base64.b64encode(credentials.encode()).decode()
+
         return {
-            "Timestamp": timestamp,
-            "Authorization": f"Basic {self.user_id}:{hash_bytes}"
+            "Authorization": f"Basic {encoded}",
+            "Content-Type": "application/json"
         }
     
     async def _request(
-        self, 
-        method: str, 
-        endpoint: str, 
+        self,
+        method: str,
+        endpoint: str,
         data: Optional[dict] = None
     ) -> dict:
         """Make authenticated API request"""
+        print(f"Making QC API request: {method} {endpoint}", flush=True)
+        print(f"User ID: {self.user_id}", flush=True)
         url = f"{self.BASE_URL}/{endpoint}"
         headers = self._get_auth_headers()
         
