@@ -37,6 +37,20 @@ from models import (
 from database import Database
 
 
+# File-based logging
+LOG_FILE = "/tmp/refinery.log"
+
+def log(message: str):
+    """Write to log file"""
+    from datetime import datetime
+    with open(LOG_FILE, "a") as f:
+        f.write(f"{datetime.now().isoformat()} - {message}\n")
+
+# Clear log on startup
+with open(LOG_FILE, "w") as f:
+    f.write("=== Backend started ===\n")
+
+
 # Global state
 db = Database()
 engine: Optional[RefinementEngine] = None
@@ -184,6 +198,7 @@ async def get_loop_status():
 @app.post("/api/loop/start")
 async def start_loop(req: StartLoopRequest):
     """Start the autonomous refinement loop"""
+    log(f"start_loop called: {req.strategy_id}")
     print(f"start_loop called with strategy_id: {req.strategy_id}", flush=True)
     print(f"Config: {req.config}", flush=True)
 
@@ -287,13 +302,23 @@ async def update_config(updates: ConfigUpdate):
 
 @app.get("/api/health")
 async def health_check():
+    log("health check called")
     logger.info("Health check called")
     return {
         "status": "healthy",
-        "version": "debug-v3",
+        "version": "debug-v4",
         "timestamp": datetime.now().isoformat(),
         "loop_running": engine.is_running if engine else False
     }
+
+
+@app.get("/api/logs")
+async def get_logs():
+    try:
+        with open(LOG_FILE, "r") as f:
+            return {"logs": f.read()}
+    except:
+        return {"logs": "No logs yet"}
 
 
 if __name__ == "__main__":
