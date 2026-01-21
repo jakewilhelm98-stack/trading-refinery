@@ -174,8 +174,11 @@ async def get_loop_status():
 @app.post("/api/loop/start")
 async def start_loop(req: StartLoopRequest):
     """Start the autonomous refinement loop"""
+    print(f"start_loop called with strategy_id: {req.strategy_id}", flush=True)
+    print(f"Config: {req.config}", flush=True)
+
     global engine
-    
+
     strategy = await db.get_strategy(req.strategy_id)
     if not strategy:
         raise HTTPException(404, "Strategy not found")
@@ -190,8 +193,10 @@ async def start_loop(req: StartLoopRequest):
     )
     
     # Start loop in background
+    print("About to create refinement task...", flush=True)
     asyncio.create_task(engine.run(strategy))
-    
+    print("Refinement task created", flush=True)
+
     return {"status": "started", "strategy_id": req.strategy_id}
 
 
