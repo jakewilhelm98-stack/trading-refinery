@@ -180,13 +180,15 @@ function StrategySelector({ strategies, selected, onSelect, onNew }) {
   const [showNew, setShowNew] = useState(false);
   const [newName, setNewName] = useState('');
   const [newCode, setNewCode] = useState('');
+  const [newProjectId, setNewProjectId] = useState('');
 
   const handleCreate = async () => {
     if (!newName || !newCode) return;
-    await onNew(newName, newCode);
+    await onNew(newName, newCode, newProjectId);
     setShowNew(false);
     setNewName('');
     setNewCode('');
+    setNewProjectId('');
   };
 
   return (
@@ -208,6 +210,12 @@ function StrategySelector({ strategies, selected, onSelect, onNew }) {
             placeholder="Paste QuantConnect Lean code..."
             value={newCode}
             onChange={(e) => setNewCode(e.target.value)}
+          />
+          <input
+            type="text"
+            placeholder="QuantConnect Project ID"
+            value={newProjectId}
+            onChange={(e) => setNewProjectId(e.target.value)}
           />
           <button className="btn-primary" onClick={handleCreate}>Create</button>
         </div>
@@ -397,8 +405,8 @@ export default function App() {
   useWebSocket(handleWsMessage);
 
   // Actions
-  const handleNewStrategy = async (name, code) => {
-    const res = await api.post('/strategies', { name, code });
+  const handleNewStrategy = async (name, code, qcProjectId) => {
+    const res = await api.post('/strategies', { name, code, qc_project_id: qcProjectId });
     setStrategies((s) => [res.strategy, ...s]);
     setSelectedStrategy(res.strategy);
   };

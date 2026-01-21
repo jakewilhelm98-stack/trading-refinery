@@ -69,6 +69,7 @@ class StrategyCreate(BaseModel):
     name: str
     code: str
     description: Optional[str] = None
+    qc_project_id: Optional[str] = None
 
 
 class ConfigUpdate(BaseModel):
@@ -122,6 +123,7 @@ async def create_strategy(req: StrategyCreate):
         name=req.name,
         code=req.code,
         description=req.description,
+        qc_project_id=req.qc_project_id,
         created_at=datetime.now(),
         current_version=1
     )
