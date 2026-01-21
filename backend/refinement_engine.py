@@ -58,9 +58,9 @@ class RefinementEngine:
     async def run(self, strategy: Strategy):
         """Main refinement loop"""
         self.is_running = True
-        print(f"Starting refinement loop for strategy: {strategy.name}")
-        print(f"Strategy QC Project ID: {strategy.qc_project_id}")
-        print(f"Config: {self.config}")
+        print(f"Starting refinement loop for strategy: {strategy.name}", flush=True)
+        print(f"Strategy QC Project ID: {strategy.qc_project_id}", flush=True)
+        print(f"Config: {self.config}", flush=True)
         self.current_strategy_id = strategy.id
         self.iteration_count = 0
         self.plateau_count = 0
@@ -123,7 +123,7 @@ class RefinementEngine:
                     })
                     await asyncio.sleep(self.config.backtest_cooldown)
                 except Exception as e:
-                    print(f"Loop error: {e}")
+                    print(f"Loop error: {e}", flush=True)
                     import traceback
                     traceback.print_exc()
                     raise
@@ -208,31 +208,31 @@ class RefinementEngine:
     
     async def _run_backtest(self, strategy: Strategy) -> Optional[BacktestResult]:
         """Submit strategy to QuantConnect and get results"""
-        print(f"_run_backtest called for strategy: {strategy.name}, project: {strategy.qc_project_id}")
+        print(f"_run_backtest called for strategy: {strategy.name}, project: {strategy.qc_project_id}", flush=True)
 
         try:
-            print("Attempting to compile project...")
+            print("Attempting to compile project...", flush=True)
             compile_result = await self.qc.compile_project(
                 strategy.qc_project_id,
                 strategy.code
             )
-            print(f"Compile result: {compile_result}")
+            print(f"Compile result: {compile_result}", flush=True)
 
             if not compile_result.get("success"):
-                print(f"Compile failed: {compile_result}")
+                print(f"Compile failed: {compile_result}", flush=True)
                 return None
 
-            print("Creating backtest...")
+            print("Creating backtest...", flush=True)
             backtest_id = await self.qc.create_backtest(
                 strategy.qc_project_id,
                 compile_result["compileId"],
                 f"Refinement v{strategy.current_version}"
             )
-            print(f"Backtest ID: {backtest_id}")
+            print(f"Backtest ID: {backtest_id}", flush=True)
 
-            print("Waiting for backtest to complete...")
+            print("Waiting for backtest to complete...", flush=True)
             result = await self.qc.wait_for_backtest(backtest_id)
-            print(f"Backtest result: {result}")
+            print(f"Backtest result: {result}", flush=True)
 
             if not result:
                 return None
@@ -249,7 +249,7 @@ class RefinementEngine:
             )
 
         except Exception as e:
-            print(f"Backtest error: {e}")
+            print(f"Backtest error: {e}", flush=True)
             import traceback
             traceback.print_exc()
             return None
