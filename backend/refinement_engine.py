@@ -208,29 +208,35 @@ class RefinementEngine:
     
     async def _run_backtest(self, strategy: Strategy) -> Optional[BacktestResult]:
         """Submit strategy to QuantConnect and get results"""
-        print(f"Running backtest for project: {strategy.qc_project_id}")
+        print(f"_run_backtest called for strategy: {strategy.name}, project: {strategy.qc_project_id}")
+
         try:
-            # Compile and run backtest
+            print("Attempting to compile project...")
             compile_result = await self.qc.compile_project(
                 strategy.qc_project_id,
                 strategy.code
             )
-            
+            print(f"Compile result: {compile_result}")
+
             if not compile_result.get("success"):
+                print(f"Compile failed: {compile_result}")
                 return None
-            
+
+            print("Creating backtest...")
             backtest_id = await self.qc.create_backtest(
                 strategy.qc_project_id,
                 compile_result["compileId"],
                 f"Refinement v{strategy.current_version}"
             )
-            
-            # Poll for completion
+            print(f"Backtest ID: {backtest_id}")
+
+            print("Waiting for backtest to complete...")
             result = await self.qc.wait_for_backtest(backtest_id)
-            
+            print(f"Backtest result: {result}")
+
             if not result:
                 return None
-            
+
             return BacktestResult(
                 backtest_id=backtest_id,
                 sharpe_ratio=result.get("sharpeRatio", 0),
@@ -241,9 +247,11 @@ class RefinementEngine:
                 avg_trade_duration=result.get("averageTradeDuration", "0"),
                 raw_data=result
             )
-            
+
         except Exception as e:
             print(f"Backtest error: {e}")
+            import traceback
+            traceback.print_exc()
             return None
     
     async def _analyze_results(
