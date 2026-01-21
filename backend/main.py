@@ -6,9 +6,19 @@ FastAPI backend with background refinement loop
 import os
 import json
 import asyncio
+import logging
+import sys
 from datetime import datetime
 from typing import Optional
 from contextlib import asynccontextmanager
+
+# Configure logging to stdout
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    handlers=[logging.StreamHandler(sys.stdout)]
+)
+logger = logging.getLogger(__name__)
 
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
@@ -277,9 +287,10 @@ async def update_config(updates: ConfigUpdate):
 
 @app.get("/api/health")
 async def health_check():
+    logger.info("Health check called")
     return {
         "status": "healthy",
-        "version": "debug-v2",
+        "version": "debug-v3",
         "timestamp": datetime.now().isoformat(),
         "loop_running": engine.is_running if engine else False
     }
