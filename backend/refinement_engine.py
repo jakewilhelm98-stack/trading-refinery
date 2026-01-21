@@ -58,6 +58,9 @@ class RefinementEngine:
     async def run(self, strategy: Strategy):
         """Main refinement loop"""
         self.is_running = True
+        print(f"Starting refinement loop for strategy: {strategy.name}")
+        print(f"Strategy QC Project ID: {strategy.qc_project_id}")
+        print(f"Config: {self.config}")
         self.current_strategy_id = strategy.id
         self.iteration_count = 0
         self.plateau_count = 0
@@ -75,50 +78,56 @@ class RefinementEngine:
         
         try:
             while self.is_running:
-                # Check pause state
-                while self.is_paused:
-                    await asyncio.sleep(1)
+                try:
+                    # Check pause state
+                    while self.is_paused:
+                        await asyncio.sleep(1)
+                        if not self.is_running:
+                            break
+
                     if not self.is_running:
                         break
-                
-                if not self.is_running:
-                    break
-                
-                # Check iteration limit
-                if self.config.max_iterations and self.iteration_count >= self.config.max_iterations:
-                    await self.on_update("max_iterations_reached", {
-                        "count": self.iteration_count
+
+                    # Check iteration limit
+                    if self.config.max_iterations and self.iteration_count >= self.config.max_iterations:
+                        await self.on_update("max_iterations_reached", {
+                            "count": self.iteration_count
+                        })
+                        break
+
+                    # Run one refinement cycle
+                    iteration = await self._run_iteration(strategy)
+
+                    if iteration:
+                        self.iteration_count += 1
+                        self.iteration_history.append(iteration)
+
+                        # Keep only recent history
+                        if len(self.iteration_history) > 10:
+                            self.iteration_history.pop(0)
+
+                        # Check for plateau
+                        if self._check_plateau(iteration):
+                            self.plateau_count += 1
+                            if self.config.auto_stop_on_plateau and self.plateau_count >= 3:
+                                await self.on_update("plateau_detected", {
+                                    "message": "Performance has plateaued, stopping loop"
+                                })
+                                break
+                        else:
+                            self.plateau_count = 0
+
+                    # Cooldown between iterations
+                    await self.on_update("cooldown", {
+                        "seconds": self.config.backtest_cooldown
                     })
-                    break
-                
-                # Run one refinement cycle
-                iteration = await self._run_iteration(strategy)
-                
-                if iteration:
-                    self.iteration_count += 1
-                    self.iteration_history.append(iteration)
-                    
-                    # Keep only recent history
-                    if len(self.iteration_history) > 10:
-                        self.iteration_history.pop(0)
-                    
-                    # Check for plateau
-                    if self._check_plateau(iteration):
-                        self.plateau_count += 1
-                        if self.config.auto_stop_on_plateau and self.plateau_count >= 3:
-                            await self.on_update("plateau_detected", {
-                                "message": "Performance has plateaued, stopping loop"
-                            })
-                            break
-                    else:
-                        self.plateau_count = 0
-                
-                # Cooldown between iterations
-                await self.on_update("cooldown", {
-                    "seconds": self.config.backtest_cooldown
-                })
-                await asyncio.sleep(self.config.backtest_cooldown)
-                
+                    await asyncio.sleep(self.config.backtest_cooldown)
+                except Exception as e:
+                    print(f"Loop error: {e}")
+                    import traceback
+                    traceback.print_exc()
+                    raise
+
         except Exception as e:
             await self.on_update("error", {"message": str(e)})
         finally:
@@ -199,6 +208,7 @@ class RefinementEngine:
     
     async def _run_backtest(self, strategy: Strategy) -> Optional[BacktestResult]:
         """Submit strategy to QuantConnect and get results"""
+        print(f"Running backtest for project: {strategy.qc_project_id}")
         try:
             # Compile and run backtest
             compile_result = await self.qc.compile_project(
