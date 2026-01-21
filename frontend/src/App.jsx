@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 
 // ============ API Client ============
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+const API_BASE = 'https://trading-refinery-production.up.railway.app';
 
 const api = {
   async get(endpoint) {
