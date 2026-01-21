@@ -279,6 +279,7 @@ async def update_config(updates: ConfigUpdate):
 async def health_check():
     return {
         "status": "healthy",
+        "version": "debug-v2",
         "timestamp": datetime.now().isoformat(),
         "loop_running": engine.is_running if engine else False
     }
